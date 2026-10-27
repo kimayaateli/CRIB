@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}After-Action Report #{{ incident.id }} | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      Exercise Completed &bull; Incident #{{ incident.id }}
+    </div>
+    <h1 class="page-title">After-Action Report (AAR)</h1>
+    <p class="page-desc">{{ scenario.title }} — Evaluation and Remediation Summary</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('history_view') }}" class="btn btn-secondary">Incident History</a>
+    <a href="{{ url_for('scenarios_list') }}" class="btn btn-primary">Start New Scenario</a>
+  </div>
+</div>
+
+<!-- Score Card Summary -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card" style="grid-column: span 2; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 1.35rem 1.75rem;">
+    <div>
+      <span class="stat-label">Final Evaluation Score</span>
+      <div class="mono" style="font-size: 2.75rem; font-weight: 700; color: {% if incident.score >= 80 %}var(--state-success){% elif incident.score >= 50 %}var(--state-warning){% else %}var(--state-critical){% endif %};">
+        {{ incident.score }}<span style="font-size: 1.35rem; color: var(--text-dim);"> / 100</span>
+      </div>
+      <div style="margin-top: 0.4rem;">
+        {% if incident.score >= 80 %}
+          <span class="badge badge-completed" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Grade: Exemplary Response</span>
+        {% elif incident.score >= 50 %}
+          <span class="badge badge-medium" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Grade: Proficient (Minor Remediation)</span>
+        {% else %}
+          <span class="badge badge-high" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">Grade: Needs Review</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="text-align: right; border-left: 1px solid var(--border-color); padding-left: 1.75rem;">
+      <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Completed At (UTC)</div>
+      <div class="mono" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">{{ incident.completed_at or 'Just now' }}</div>
+      <div style="margin-top: 0.85rem; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Evidence Mode</div>
+      <span class="badge badge-simulated">{{ scenario.evidence_origin }}</span>
+    </div>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Stages Evaluated</span>
+    <span class="stat-value stat-value-accent">4 / 4</span>
+    <span class="stat-desc">Full lifecycle completed</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Response Quality</span>
+    <span class="stat-value">
+      {{ ((incident.score / 100) * 100)|round|int }}%
+    </span>
+    <span class="stat-desc">Efficiency &amp; containment metric</span>
+  </div>
+</div>
+
+<!-- Stage Breakdown Details -->
+<h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">Stage-by-Stage Performance &amp; Explanations</h2>
+
+<div style="display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem;">
+  {% for step in stage_breakdown %}
+  <div class="card">
+    <div class="card-title">
+      <div>
+        <span style="font-size: 1.05rem; font-weight: 600; text-transform: capitalize;">{{ step.stage }} Stage</span>
+        <span style="color: var(--text-dim); font-size: 0.85rem; margin-left: 0.4rem;">— {{ step.title }}</span>
+      </div>
+      <span class="mono" style="font-size: 0.95rem; font-weight: 700; color: {% if step.points >= 20 %}var(--state-success){% elif step.points > 0 %}var(--state-warning){% else %}var(--state-critical){% endif %};">
+        +{{ step.points }} pts
+      </span>
+    </div>
+
+    <!-- Your Decision -->
+    <div style="margin: 0.65rem 0; padding: 0.85rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+      <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.5px;">Your Decision:</span>
+      <p style="font-size: 0.9rem; color: var(--text-main); margin-top: 0.25rem;">
+        {{ step.user_choice_text }}
+      </p>
+    </div>
+
+    <!-- Technical Analysis & Explanation -->
+    <div class="callout" style="margin: 0.5rem 0 0 0;">
+      <span style="font-size: 0.72rem; text-transform: uppercase; color: var(--accent-secondary); font-weight: 700; letter-spacing: 0.5px;">Technical Justification &amp; Impact:</span>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+        {{ step.explanation }}
+      </p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Recommended Post-Incident Controls -->
+<div class="card">
+  <div class="card-title">
+    <span>Recommended Preventative Controls</span>
+  </div>
+  <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+    Key security controls and architectural takeaways to permanently reduce risk for this threat vector:
+  </p>
+  <ul style="margin-left: 1.25rem; font-size: 0.88rem; color: var(--text-main);">
+    {% for obj in scenario.learning_objectives %}
+    <li style="margin-bottom: 0.35rem;">{{ obj }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

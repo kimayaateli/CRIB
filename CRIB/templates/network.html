@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Network Monitor | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Network Monitor &amp; Telemetry</h1>
+    <p class="page-desc">Inspection of genuine local loopback traffic, active listeners, and monitored security events.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('lab_view') }}" class="btn btn-secondary">Open Network Lab</a>
+    <a href="{{ url_for('network_view') }}" class="btn btn-primary">Refresh Data</a>
+  </div>
+</div>
+
+<!-- Telemetry Summary Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Monitored Interface</span>
+    <span class="stat-value mono" style="font-size: 1.35rem;">127.0.0.1</span>
+    <span class="stat-desc">Strict loopback boundary (lo0)</span>
+  </div>
+  <div class="card stat-card">
+    <span class="stat-label">Active Lab Sockets</span>
+    <span class="stat-value stat-value-accent">{{ lab_status.active_services_count }}</span>
+    <span class="stat-desc">Running TCP echo listeners</span>
+  </div>
+  <div class="card stat-card">
+    <span class="stat-label">Logged Network Events</span>
+    <span class="stat-value">{{ events|length }}</span>
+    <span class="stat-desc">Filtered connections &amp; actions</span>
+  </div>
+  <div class="card stat-card">
+    <span class="stat-label">Active Security Alerts</span>
+    <span class="stat-value">{{ alerts|length }}</span>
+    <span class="stat-desc">Engine rule matches</span>
+  </div>
+</div>
+
+<!-- AI/ML Analytics & Model Evaluation Card -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>AI/ML Threat Analytics &amp; Anomaly Detection</span>
+    <span class="badge badge-ai_ml">Isolation Forest + Random Forest</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+    Real-time behavioral telemetry analysis using dual ML models: unsupervised Isolation Forest for multi-feature volume outliers and supervised Random Forest for attack classification.
+  </p>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+    <div class="metric-pill">
+      <span class="stat-label">Model Status</span>
+      <span class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-secondary);">{{ metrics.status|upper }}</span>
+    </div>
+    <div class="metric-pill">
+      <span class="stat-label">Accuracy</span>
+      <span class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">{{ (metrics.accuracy * 100)|round(1) }}%</span>
+    </div>
+    <div class="metric-pill">
+      <span class="stat-label">Precision</span>
+      <span class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">{{ (metrics.precision * 100)|round(1) }}%</span>
+    </div>
+    <div class="metric-pill">
+      <span class="stat-label">Recall</span>
+      <span class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">{{ (metrics.recall * 100)|round(1) }}%</span>
+    </div>
+    <div class="metric-pill">
+      <span class="stat-label">F1-Score</span>
+      <span class="mono" style="font-size: 1.05rem; font-weight: 700; color: var(--accent-secondary);">{{ (metrics.f1_score * 100)|round(1) }}%</span>
+    </div>
+    <div class="metric-pill" style="flex: 1; min-width: 200px;">
+      <span class="stat-label">Sample Distribution</span>
+      <span class="mono" style="font-size: 0.82rem; color: var(--text-dim); margin-top: 0.2rem;">
+        Train: {{ metrics.train_samples or 'Baseline' }} | Test: {{ metrics.test_samples or 'Validation' }}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Active Local Services Table -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Active Local Lab Listeners</span>
+    <span class="badge badge-observed">GENUINE LOCAL OBSERVATION</span>
+  </div>
+
+  {% if lab_status.services %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Protocol</th>
+          <th>Bind Address</th>
+          <th>Port</th>
+          <th>State</th>
+          <th>Activated At (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for srv in lab_status.services %}
+        <tr>
+          <td class="mono">TCP</td>
+          <td class="mono">127.0.0.1</td>
+          <td class="mono" style="color: var(--accent-secondary); font-weight: 700;">{{ srv.port }}</td>
+          <td><span class="badge badge-completed">LISTENING</span></td>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">{{ srv.started_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 1.5rem; text-align: center; color: var(--text-dim);">
+    <p>No lab listeners currently active. Go to the <a href="{{ url_for('lab_view') }}">Controlled Network Lab</a> to activate a test listener.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Network Event Telemetry Filters -->
+<form method="GET" action="{{ url_for('network_view') }}" class="filter-bar">
+  <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+    <div>
+      <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 0.2rem; font-weight: 600;">Origin</label>
+      <select name="origin" class="filter-input">
+        <option value="all" {% if origin_filter == 'all' %}selected{% endif %}>All Evidence Origins</option>
+        <option value="genuine" {% if origin_filter == 'genuine' %}selected{% endif %}>Genuine Local Loopback</option>
+        <option value="simulated" {% if origin_filter == 'simulated' %}selected{% endif %}>Simulated Range</option>
+      </select>
+    </div>
+
+    <div>
+      <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 0.2rem; font-weight: 600;">Event Type</label>
+      <input type="text" name="event_type" value="{{ event_type_filter }}" placeholder="e.g. CONNECT, AUTH_FAILURE" class="filter-input" style="min-width: 170px;">
+    </div>
+
+    <div>
+      <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 0.2rem; font-weight: 600;">Search Keyword</label>
+      <input type="text" name="search" value="{{ search_query }}" placeholder="IP, port, or payload..." class="filter-input" style="min-width: 180px;">
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 0.5rem; align-items: flex-end; margin-top: 0.5rem;">
+    <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+    <a href="{{ url_for('network_view') }}" class="btn btn-secondary btn-sm">Reset</a>
+  </div>
+</form>
+
+<!-- Recent Network Events Stream -->
+<div class="card">
+  <div class="card-title">
+    <span>Monitored Event Stream</span>
+    <span style="font-size: 0.82rem; color: var(--text-dim);">Showing {{ events|length }} matching events</span>
+  </div>
+
+  {% if events %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Time (UTC)</th>
+          <th>Event Type</th>
+          <th>Source IP</th>
+          <th>Destination IP</th>
+          <th>Port</th>
+          <th>Details</th>
+          <th>Origin</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for evt in events %}
+        <tr>
+          <td class="mono" style="font-size: 0.78rem; color: var(--text-dim);">{{ evt.timestamp }}</td>
+          <td class="mono" style="font-weight: 600; color: var(--text-main);">{{ evt.event_type }}</td>
+          <td class="mono">{{ evt.source_ip or '—' }}</td>
+          <td class="mono">{{ evt.destination_ip or '—' }}</td>
+          <td class="mono">{{ evt.destination_port or '—' }}</td>
+          <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 320px; word-break: break-all;">
+            {{ evt.details }}
+          </td>
+          <td>
+            {% if 'GENUINE_LOCAL_OBSERVATION' in evt.details %}
+              <span class="badge badge-observed">GENUINE LOCAL</span>
+            {% else %}
+              <span class="badge badge-simulated">SIMULATED RANGE</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+    <p>No network events recorded yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

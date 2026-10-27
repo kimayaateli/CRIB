@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ incident.title }} | CRIB Incident Response{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.6rem;">
+      <span>Incident #{{ incident.id }} &bull; {{ scenario.title }}</span>
+      {% if incident.status == 'OPEN' %}
+        <span class="badge badge-open">STATUS: OPEN</span>
+      {% elif incident.status == 'INVESTIGATING' %}
+        <span class="badge badge-investigating">STATUS: INVESTIGATING</span>
+      {% elif incident.status in ('COMPLETED', 'RESOLVED') %}
+        <span class="badge badge-resolved">STATUS: RESOLVED</span>
+      {% else %}
+        <span class="badge badge-active">STATUS: ACTIVE</span>
+      {% endif %}
+    </div>
+    <h1 class="page-title">{{ incident.title }}</h1>
+  </div>
+  <div style="text-align: right;">
+    <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Current Score</div>
+    <div class="mono" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-secondary);">{{ incident.score }}/100</div>
+  </div>
+</div>
+
+<!-- 4-Stage Lifecycle Stepper -->
+<div class="stepper">
+  <div class="step-item {% if incident.stage == 'triage' %}active{% elif current_stage_idx > 0 %}completed{% endif %}">
+    <div class="step-number">1</div>
+    <span>Triage</span>
+  </div>
+  <div class="step-item {% if incident.stage == 'investigation' %}active{% elif current_stage_idx > 1 %}completed{% endif %}">
+    <div class="step-number">2</div>
+    <span>Investigation</span>
+  </div>
+  <div class="step-item {% if incident.stage == 'containment' %}active{% elif current_stage_idx > 2 %}completed{% endif %}">
+    <div class="step-number">3</div>
+    <span>Containment</span>
+  </div>
+  <div class="step-item {% if incident.stage == 'recovery' %}active{% elif current_stage_idx > 3 %}completed{% endif %}">
+    <div class="step-number">4</div>
+    <span>Recovery</span>
+  </div>
+</div>
+
+<!-- Evidence Console -->
+<div class="card" style="margin-bottom: 1.75rem;">
+  <div class="card-title">
+    <span>Stage Evidence &amp; Telemetry Feed</span>
+    <span class="badge badge-simulated">{{ scenario.evidence_origin }}</span>
+  </div>
+
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+    Carefully inspect the recorded logs below before making your decision for this stage.
+  </p>
+
+  <div class="evidence-console">
+    {% for ev in scenario.simulated_events %}
+    <div class="evidence-line">
+      <span class="evidence-time mono">[{{ ev.get('timestamp', '00:00:00Z') }}]</span>
+      <span class="evidence-type mono">{{ ev.event_type }}</span>
+      <span class="evidence-detail mono">SRC={{ ev.source_ip }} &rarr; DST={{ ev.destination_ip }}:{{ ev.destination_port or '*' }} | {{ ev.details }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Decision Stage Question & Options -->
+<div class="card">
+  <div class="card-title">
+    <span>{{ stage_info.title }}</span>
+    <span class="badge badge-stage">Stage {{ current_stage_idx + 1 }} of 4</span>
+  </div>
+
+  <div class="callout" style="margin: 1rem 0;">
+    <p style="font-size: 0.95rem; font-weight: 500; color: var(--text-main);">
+      {{ stage_info.prompt }}
+    </p>
+  </div>
+
+  <form action="{{ url_for('submit_decision', incident_id=incident.id) }}" method="POST">
+    <input type="hidden" name="stage" value="{{ incident.stage }}">
+
+    <div class="choice-list">
+      {% for opt in stage_info.options %}
+      <label class="choice-option">
+        <input type="radio" name="choice_id" value="{{ opt.id }}" required>
+        <span class="choice-text">{{ opt.text }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+      <span style="font-size: 0.82rem; color: var(--text-dim);">Select the most appropriate defensive action to award points and progress.</span>
+      <button type="submit" class="btn btn-primary">Submit Decision &amp; Proceed &rarr;</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

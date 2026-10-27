@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Controlled Network Lab | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Controlled TCP Network Lab</h1>
+    <p class="page-desc">Safe, isolated local loopback environment for practical networking and detection testing.</p>
+  </div>
+  <div>
+    <span class="badge badge-observed" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">Boundary: Strictly 127.0.0.1</span>
+  </div>
+</div>
+
+<!-- Safety Notice -->
+<div class="callout">
+  <strong>Controlled Environment Guarantee:</strong>
+  <span style="color: var(--text-muted); font-size: 0.88rem; margin-left: 0.35rem;">
+    All exercises in this lab are programmatically confined to the local loopback interface (<code>127.0.0.1</code>) and unprivileged user ports (1024–65535).
+    No packets ever leave this host, ensuring safe, repeatable experimentation.
+  </span>
+</div>
+
+<!-- Interactive Lab Exercises Grid -->
+<div class="grid grid-cols-2" style="margin-bottom: 2rem;">
+
+  <!-- Exercise 1: Local TCP Service Control -->
+  <div class="card">
+    <div class="card-title">
+      <span>1. Local TCP Echo Service</span>
+      <span class="badge {% if lab_status.active_services_count > 0 %}badge-completed{% else %}badge-simulated{% endif %}">
+        {% if lab_status.active_services_count > 0 %}LISTENING{% else %}STANDBY{% endif %}
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
+      Starts or stops a background TCP echo socket listener on loopback port <code>9100</code> to accept and reply to test handshakes.
+    </p>
+
+    <div style="display: flex; gap: 0.75rem;">
+      <form action="{{ url_for('lab_start_service') }}" method="POST" style="margin: 0;">
+        <button type="submit" class="btn btn-primary btn-sm">Start Service (Port 9100)</button>
+      </form>
+      <form action="{{ url_for('lab_stop_service') }}" method="POST" style="margin: 0;">
+        <button type="submit" class="btn btn-secondary btn-sm">Stop Service</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Exercise 2: Controlled TCP Socket Probe -->
+  <div class="card">
+    <div class="card-title">
+      <span>2. Loopback TCP Socket Probe</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1rem;">
+      Transmit an actual TCP payload to a local port and inspect socket return data and millisecond latency.
+    </p>
+
+    <form action="{{ url_for('lab_probe') }}" method="POST" style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem;">
+        <div style="flex: 1;">
+          <label>Port</label>
+          <input type="number" name="port" value="9100" min="1024" max="65535" required class="mono" style="width: 100%;">
+        </div>
+        <div style="flex: 2;">
+          <label>Payload</label>
+          <input type="text" name="payload" value="CRIB_PING_TEST" maxlength="64" class="mono" style="width: 100%;">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="align-self: flex-start;">Send TCP Probe</button>
+    </form>
+  </div>
+
+  <!-- Exercise 3: Controlled Port Verification -->
+  <div class="card">
+    <div class="card-title">
+      <span>3. Local Port State Verification</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
+      Verifies the TCP connection state (OPEN / CLOSED) across designated lab ports (<code>9100–9103</code>) on <code>127.0.0.1</code>.
+    </p>
+
+    <form action="{{ url_for('lab_scan') }}" method="POST" style="margin: 0;">
+      <button type="submit" class="btn btn-secondary btn-sm">Scan Designated Lab Ports</button>
+    </form>
+  </div>
+
+  <!-- Exercise 4: Detection Engine Demonstration -->
+  <div class="card">
+    <div class="card-title">
+      <span>4. Trigger Detection Demonstration</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
+      Generates a rapid sequence of 12 distinct TCP connection requests to simulate a port scan and trigger the CRIB Detection Engine.
+    </p>
+
+    <form action="{{ url_for('lab_trigger_demo') }}" method="POST" style="margin: 0;">
+      <button type="submit" class="btn btn-primary btn-sm">Run Port Scan Simulation</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- Lab Output Console -->
+{% if output %}
+<div class="card">
+  <div class="card-title">
+    <span>Execution Output Console</span>
+    <span class="badge badge-observed">REAL-TIME TELEMETRY</span>
+  </div>
+  <div class="evidence-console">
+    <pre style="margin: 0; font-family: var(--font-mono); color: var(--accent-secondary); white-space: pre-wrap;">{{ output }}</pre>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

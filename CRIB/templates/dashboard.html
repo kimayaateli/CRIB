@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Security Operations Dashboard</h1>
+    <p class="page-desc">Overview of your controlled incident response environment and active cyber exercises.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('scenarios_list') }}" class="btn btn-primary">Launch New Scenario</a>
+  </div>
+</div>
+
+<!-- Key Stat Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Active Incidents</span>
+    <span class="stat-value">{{ stats.active_incidents }}</span>
+    <span class="stat-desc">Exercises currently in progress</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Completed Exercises</span>
+    <span class="stat-value stat-value-accent">{{ stats.completed_incidents }}</span>
+    <span class="stat-desc">Finished training sessions</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Recorded Events</span>
+    <span class="stat-value">{{ stats.total_events }}</span>
+    <span class="stat-desc">Network &amp; lab telemetry</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Detection Alerts</span>
+    <span class="stat-value">{{ stats.total_alerts }}</span>
+    <span class="stat-desc">Triggered rule findings</span>
+  </div>
+</div>
+
+<!-- Scenarios Catalog Quick Start -->
+<div style="margin-bottom: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Incident Response Scenarios</h2>
+    <a href="{{ url_for('scenarios_list') }}" style="font-size: 0.85rem; font-weight: 600;">View All &rarr;</a>
+  </div>
+
+  <div class="grid grid-cols-2">
+    {% for sc in scenarios_summary %}
+    <div class="card" style="display: flex; flex-direction: column;">
+      <div class="card-title">
+        <span>{{ sc.title }}</span>
+        <span class="badge badge-{{ sc.severity.lower() }}">{{ sc.severity }}</span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; flex: 1;">
+        {{ sc.summary }}
+      </p>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.85rem; margin-top: auto;">
+        <span class="badge badge-simulated">{{ sc.evidence_origin }}</span>
+        <form action="{{ url_for('start_incident', scenario_id=sc.id) }}" method="POST" style="margin: 0;">
+          <button type="submit" class="btn btn-primary btn-sm">Start Investigation</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Recent Incidents & Detection Alerts -->
+<div class="grid grid-cols-2">
+  <div class="card">
+    <div class="card-title">
+      <span>Recent Training Sessions</span>
+      <a href="{{ url_for('history_view') }}" style="font-size: 0.8rem; font-weight: 500;">Full History</a>
+    </div>
+
+    {% if recent_incidents %}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Stage</th>
+            <th>Score</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inc in recent_incidents %}
+          <tr>
+            <td class="mono">#{{ inc.id }}</td>
+            <td>
+              <a href="{% if inc.status == 'COMPLETED' %}{{ url_for('results_view', incident_id=inc.id) }}{% else %}{{ url_for('incident_view', incident_id=inc.id) }}{% endif %}" style="font-weight: 600;">
+                {{ inc.title }}
+              </a>
+            </td>
+            <td><span class="badge badge-stage">{{ inc.stage }}</span></td>
+            <td class="mono" style="font-weight: 700;">{{ inc.score }}/100</td>
+            <td>
+              <span class="badge badge-{{ inc.status.lower() }}">{{ inc.status }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+      <p>No training sessions recorded yet.</p>
+      <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">Launch a scenario above to begin your first investigation.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span>Recent Detection Alerts</span>
+      <a href="{{ url_for('logs_view') }}" style="font-size: 0.8rem; font-weight: 500;">All Logs</a>
+    </div>
+
+    {% if recent_alerts %}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Rule ID</th>
+            <th>Severity</th>
+            <th>Alert Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for alert in recent_alerts %}
+          <tr>
+            <td class="mono" style="color: var(--accent-secondary); font-weight: 600;">{{ alert.rule_id }}</td>
+            <td><span class="badge badge-{{ alert.severity.lower() }}">{{ alert.severity }}</span></td>
+            <td style="font-size: 0.82rem; color: var(--text-muted);">{{ alert.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+      <p>No security alerts currently active.</p>
+      <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">Use the Network Lab to simulate network scans and test the detection engine.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
