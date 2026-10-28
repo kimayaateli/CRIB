@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Training Dashboard | CRIB{% endblock %}
+
+{% block content %}
+{% if user.role in ('MANAGER', 'ADMIN') %}
+<div class="card" style="margin-bottom: 1.5rem; background: #161311; border-left: 4px solid var(--accent-secondary); padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+  <div>
+    <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--accent-secondary); letter-spacing: 0.05em;">Single Account Dual-Mode Access</span>
+    <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-top: 0.15rem;">Personal Trainee Cockpit &bull; {{ user.full_name }}</div>
+    <span style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-top: 0.2rem;">
+      You are viewing your individual cyber range simulation history, verified hours, and skill assessment.
+    </span>
+  </div>
+  <div>
+    <a href="{{ url_for('manager_dashboard') }}" class="btn btn-primary btn-sm">👔 Return to Team Oversight &rarr;</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Page Header with Profile Summary -->
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      IT Security Training Portal &bull; {{ user.department }}
+    </div>
+    <h1 class="page-title">Welcome back, {{ user.full_name }}</h1>
+    <p class="page-desc">
+      Supervisor: <strong style="color: var(--text-main);">{{ user.supervisor_name or 'Unassigned' }}</strong> &bull;
+      Employee ID: <span class="mono" style="color: var(--accent-secondary);">#{{ user.id }}</span> &bull;
+      Status: <span class="badge badge-active">Active Training</span>
+    </p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('employee_training') }}" class="btn btn-secondary">Assigned Work</a>
+    <a href="{{ url_for('scenarios_list') }}" class="btn btn-primary">Launch Cyber Range &rarr;</a>
+  </div>
+</div>
+
+<!-- 6 Performance Summary Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Scenarios Attempted</span>
+    <span class="stat-value">{{ summary.total_attempted }}</span>
+    <span class="stat-desc">Total range exercises engaged</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Successfully Completed</span>
+    <span class="stat-value stat-value-accent" style="color: var(--state-success);">{{ summary.completed_count }}</span>
+    <span class="stat-desc">Passed with score &ge; 70%</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Pending Assignments</span>
+    <span class="stat-value" style="color: {% if summary.pending_assignments > 0 %}var(--state-warning){% else %}var(--text-main){% endif %};">
+      {{ summary.pending_assignments }}
+    </span>
+    <span class="stat-desc">Awaiting your response</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Needs Improvement</span>
+    <span class="stat-value" style="color: {% if summary.needs_improvement > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+      {{ summary.needs_improvement }}
+    </span>
+    <span class="stat-desc">Score &lt; 70% or flagged</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Verified Training Hours</span>
+    <span class="stat-value mono" style="font-size: 1.85rem;">{{ summary.verified_hours }}h</span>
+    <span class="stat-desc">Active socket &amp; IR duration</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Overall Proficiency</span>
+    <span class="stat-value mono" style="font-size: 1.85rem; color: var(--text-main);">{{ summary.overall_score }}%</span>
+    <span class="stat-desc">Weighted average assessment</span>
+  </div>
+</div>
+
+<!-- 12-Week Activity Heatmap (GitHub Style) -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>12-Week Cybersecurity Training Activity</span>
+    <span class="badge badge-active">{{ heatmap.total_active_days }} Active Days Recorded</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+    Verified daily hands-on incident response activity. Darker blocks represent higher numbers of completed cyber defense exercises and validated training hours.
+  </p>
+
+  <div class="heatmap-container">
+    <div class="heatmap-grid" title="Daily training activity">
+      {% for d in heatmap.days %}
+      <div class="heatmap-cell heatmap-level-{{ d.level }}"
+           title="{{ d.date }} ({{ d.day_name }}): {{ d.count }} activity/ies, {{ d.duration_minutes }}m verified time, avg score {{ d.avg_score }}%">
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="heatmap-legend">
+      <span>Less</span>
+      <div class="heatmap-cell heatmap-level-0" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-1" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-2" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-3" style="display: inline-block;"></div>
+      <span>More Activity</span>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Trend Graph & Skills Breakdown -->
+<div class="grid grid-cols-2" style="margin-bottom: 2rem;">
+  <!-- Weekly Progress Trend -->
+  <div class="card">
+    <div class="card-title">
+      <span>Weekly Performance Trend</span>
+      <span class="badge badge-observed">Last 8 Weeks</span>
+    </div>
+    <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+      Weekly completed cyber scenarios and validated training hours.
+    </p>
+
+    <div class="trend-bar-chart">
+      {% for w in trends %}
+      <div class="trend-col">
+        <div style="font-size: 0.7rem; color: var(--text-main); margin-bottom: 0.2rem; font-family: var(--font-mono);">
+          {% if w.completed > 0 %}{{ w.completed }}{% endif %}
+        </div>
+        <div class="trend-bar" style="height: {{ (w.completed * 30)|min(110)|max(4) }}px;" title="{{ w.date_range }}: {{ w.completed }} scenarios, {{ w.hours }}h, score {{ w.score }}%"></div>
+        <div class="trend-label">{{ w.week_label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem;">
+      <span>Oldest Week</span>
+      <span>Current Week</span>
+    </div>
+  </div>
+
+  <!-- Skills & Competencies Breakdown -->
+  <div class="card">
+    <div class="card-title">
+      <span>Cybersecurity Skill Competencies</span>
+      <span class="badge badge-stage">Assessment Matrix</span>
+    </div>
+    <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+      Calculated from objective scenario evaluations and defensive containment choices.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+      {% for s in skills %}
+      <div style="padding: 0.65rem 0.85rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+          <strong style="font-size: 0.88rem; color: var(--text-main);">{{ s.skill }}</strong>
+          <span class="badge badge-{{ s.color }}">{{ s.proficiency }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
+          <span>{{ s.description }}</span>
+          <span class="mono" style="color: var(--accent-secondary); font-weight: 600;">{{ s.score }}% ({{ s.attempts }} att.)</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Pending Assignments & Recent Activity Grid -->
+<div class="grid grid-cols-2">
+  <!-- Active / Assigned Tasks -->
+  <div class="card">
+    <div class="card-title">
+      <span>Assigned Cyber Exercises</span>
+      <span class="badge badge-high">{{ pending_assignments|length }} Pending</span>
+    </div>
+
+    {% if pending_assignments %}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Priority</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in pending_assignments %}
+          <tr>
+            <td>
+              <strong style="color: var(--text-main); font-size: 0.88rem;">{{ a.scenario_id }}</strong>
+              {% if a.instructions %}
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ a.instructions[:45] }}...</div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge badge-{{ a.priority.lower() }}">{{ a.priority }}</span>
+            </td>
+            <td class="mono" style="font-size: 0.8rem;">{{ a.due_date }}</td>
+            <td>
+              <span class="badge badge-{{ a.status.lower().replace('_', '-') }}">{{ a.status }}</span>
+            </td>
+            <td>
+              <form action="{{ url_for('start_incident', scenario_id=a.scenario_id) }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="assignment_id" value="{{ a.id }}">
+                <button type="submit" class="btn btn-primary btn-sm">Start &rarr;</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+      <p>No pending assignments. You are fully up to date!</p>
+      <a href="{{ url_for('scenarios_list') }}" class="btn btn-secondary btn-sm" style="margin-top: 0.75rem;">Browse Scenarios</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Activity History -->
+  <div class="card">
+    <div class="card-title">
+      <span>Recent Training Activities</span>
+      <a href="{{ url_for('employee_activity') }}" style="font-size: 0.8rem;">View All &rarr;</a>
+    </div>
+
+    {% if activities %}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Activity</th>
+            <th>Score</th>
+            <th>Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for act in activities[:5] %}
+          <tr>
+            <td class="mono" style="font-size: 0.78rem; color: var(--text-dim);">{{ act.activity_date }}</td>
+            <td style="font-weight: 600; color: var(--text-main);">{{ act.scenario_id }}</td>
+            <td class="mono" style="font-weight: 700; color: {% if act.score >= 80 %}var(--state-success){% elif act.score >= 70 %}var(--state-warning){% else %}#D67C80{% endif %};">
+              {{ act.score }}/100
+            </td>
+            <td class="mono" style="font-size: 0.8rem;">{{ (act.duration_seconds / 60)|round|int }}m</td>
+            <td><span class="badge badge-completed">{{ act.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+      <p>No completed activities on record yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

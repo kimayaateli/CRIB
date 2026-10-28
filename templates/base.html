@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CRIB — Cyber Range in a Box{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <a href="{{ url_for('dashboard') }}" class="brand">
+      <div class="brand-icon">CR</div>
+      <div>
+        <span class="brand-title">CRIB</span>
+        <span class="brand-subtitle">Cyber Range</span>
+      </div>
+    </a>
+
+    <nav>
+      <ul class="nav-links">
+        {% if current_user %}
+          {% if current_user.role == 'EMPLOYEE' %}
+            <li><a href="{{ url_for('employee_dashboard') }}" class="nav-link {% if active_page == 'employee_dashboard' %}active{% endif %}">Overview</a></li>
+            <li><a href="{{ url_for('employee_training') }}" class="nav-link {% if active_page == 'employee_training' %}active{% endif %}">My Training</a></li>
+            <li><a href="{{ url_for('employee_progress') }}" class="nav-link {% if active_page == 'employee_progress' %}active{% endif %}">My Progress</a></li>
+            <li><a href="{{ url_for('employee_activity') }}" class="nav-link {% if active_page == 'employee_activity' %}active{% endif %}">My Activity</a></li>
+            <li><a href="{{ url_for('scenarios_list') }}" class="nav-link {% if active_page == 'scenarios' %}active{% endif %}">Cyber Range</a></li>
+          {% elif current_user.role == 'MANAGER' %}
+            <li><a href="{{ url_for('manager_dashboard') }}" class="nav-link {% if active_page == 'manager_dashboard' %}active{% endif %}">Team Overview</a></li>
+            <li><a href="{{ url_for('manager_assignments') }}" class="nav-link {% if active_page == 'manager_assignments' %}active{% endif %}">Assignments</a></li>
+            <li><a href="{{ url_for('manager_analytics') }}" class="nav-link {% if active_page == 'manager_analytics' %}active{% endif %}">Training Analytics</a></li>
+            <li><a href="{{ url_for('manager_reports') }}" class="nav-link {% if active_page == 'manager_reports' %}active{% endif %}">Reports</a></li>
+            <li><a href="{{ url_for('employee_dashboard') }}" class="nav-link {% if active_page and active_page.startswith('employee_') %}active{% endif %}" style="color: var(--accent-secondary);">My Personal Training</a></li>
+            <li><a href="{{ url_for('scenarios_list') }}" class="nav-link {% if active_page == 'scenarios' %}active{% endif %}">Cyber Range</a></li>
+          {% elif current_user.role == 'ADMIN' %}
+            <li><a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if active_page == 'admin' %}active{% endif %}">User Management</a></li>
+            <li><a href="{{ url_for('admin_audit') }}" class="nav-link {% if active_page == 'admin_audit' %}active{% endif %}">Audit Logs</a></li>
+            <li><a href="{{ url_for('scenarios_list') }}" class="nav-link {% if active_page == 'scenarios' %}active{% endif %}">Cyber Range</a></li>
+            <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">SOC Telemetry</a></li>
+          {% endif %}
+        {% else %}
+          <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a></li>
+          <li><a href="{{ url_for('scenarios_list') }}" class="nav-link {% if active_page == 'scenarios' %}active{% endif %}">Scenarios</a></li>
+          <li><a href="{{ url_for('lab_view') }}" class="nav-link {% if active_page == 'lab' %}active{% endif %}">Network Lab</a></li>
+          <li><a href="{{ url_for('network_view') }}" class="nav-link {% if active_page == 'network' %}active{% endif %}">Network Monitor</a></li>
+          <li><a href="{{ url_for('logs_view') }}" class="nav-link {% if active_page == 'logs' %}active{% endif %}">Event Logs</a></li>
+          <li><a href="{{ url_for('history_view') }}" class="nav-link {% if active_page == 'history' %}active{% endif %}">History</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      {% if current_user %}
+        <a href="{{ url_for('notifications_view') }}" class="nav-link" style="position: relative; padding: 0.4rem 0.65rem;" title="Notifications">
+          <span>🔔</span>
+          {% if unread_notifications_count > 0 %}
+            <span style="position: absolute; top: 0px; right: 0px; background: var(--state-critical); color: #fff; font-size: 0.65rem; font-weight: 700; border-radius: 10px; padding: 0.1rem 0.35rem; line-height: 1;">
+              {{ unread_notifications_count }}
+            </span>
+          {% endif %}
+        </a>
+        <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.3rem 0.75rem; border-radius: var(--radius-sm);">
+          <div style="display: flex; flex-direction: column; text-align: right;">
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">{{ current_user.full_name }}</span>
+            <span style="font-size: 0.68rem; color: var(--accent-secondary); text-transform: uppercase;">{{ current_user.role }}</span>
+          </div>
+          {% if current_user.role in ('MANAGER', 'ADMIN') %}
+            {% if active_page and active_page.startswith('employee_') %}
+              <a href="{{ url_for('manager_dashboard') }}" class="btn btn-primary btn-sm" style="padding: 0.22rem 0.45rem; font-size: 0.72rem;" title="Switch to supervisor oversight portal">Team Portal &rarr;</a>
+            {% else %}
+              <a href="{{ url_for('employee_dashboard') }}" class="btn btn-secondary btn-sm" style="padding: 0.22rem 0.45rem; font-size: 0.72rem;" title="Switch to personal employee cockpit">Personal View &rarr;</a>
+            {% endif %}
+          {% endif %}
+          <a href="{{ url_for('profile_view') }}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Profile</a>
+          <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Logout</a>
+        </div>
+      {% else %}
+        <div class="nav-status">
+          <span class="status-dot"></span>
+          <span>Range Active</span>
+        </div>
+        <a href="{{ url_for('login_view') }}" class="btn btn-primary btn-sm">Sign In &rarr;</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-msg flash-{{ category }}">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p><strong>CRIB — Cyber Range in a Box</strong> | Interactive Cybersecurity Incident Response Training</p>
+    <p style="margin-top: 0.25rem;">
+      Controlled local training environment. Simulated evidence datasets and genuine loopback observations are strictly differentiated.
+    </p>
+  </footer>
+</body>
+</html>

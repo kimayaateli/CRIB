@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Team Training Analytics | CRIB Supervisor Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      SOC Supervision &bull; Team Competency Metrics &amp; Readiness
+    </div>
+    <h1 class="page-title">Cybersecurity Training Analytics</h1>
+    <p class="page-desc">Empirical insights into analyst decision-making, incident containment efficiency, and skill readiness.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary">&larr; Team Overview</a>
+    <a href="{{ url_for('manager_reports') }}" class="btn btn-primary">Export Reports &amp; CSV &rarr;</a>
+  </div>
+</div>
+
+<!-- Key Analytics Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Team Average Score</span>
+    <span class="stat-value mono" style="font-size: 1.85rem; color: {% if summary.avg_team_score >= 80 %}var(--state-success){% elif summary.avg_team_score >= 70 %}var(--state-warning){% else %}#D67C80{% endif %};">
+      {{ summary.avg_team_score }}%
+    </span>
+    <span class="stat-desc">Benchmark threshold: 75%</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Total Verified Hours</span>
+    <span class="stat-value mono" style="font-size: 1.85rem;">{{ summary.total_hours }}h</span>
+    <span class="stat-desc">Cumulative range simulation time</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Total Completed Simulations</span>
+    <span class="stat-value">{{ summary.completed_scenarios }}</span>
+    <span class="stat-desc">Full AARs generated</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Team Members Meeting Target</span>
+    <span class="stat-value" style="color: var(--state-success);">
+      {{ summary.meeting_targets }}/{{ summary.total_assigned }}
+    </span>
+    <span class="stat-desc">Scoring &ge; 75% on exercises</span>
+  </div>
+</div>
+
+<!-- Competency Radar & Score Distribution -->
+<div class="grid grid-cols-2" style="margin-bottom: 2rem;">
+  <!-- Team Skill Competencies -->
+  <div class="card">
+    <div class="card-title">
+      <span>Team Competency Domain Breakdown</span>
+      <span class="mono" style="font-size: 0.75rem; color: var(--accent-secondary);">AGGREGATE SCORE</span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Average team capability measured across foundational incident handling phases.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      {% for domain in domain_scores %}
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+          <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-main);">{{ domain.name }}</span>
+          <span class="mono" style="font-size: 0.82rem; font-weight: 700; color: {% if domain.score >= 80 %}var(--state-success){% elif domain.score >= 70 %}var(--state-warning){% elif domain.score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {{ domain.score }}%
+          </span>
+        </div>
+        <div style="width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+          <div style="width: {{ domain.score }}%; height: 100%; background: {% if domain.score >= 80 %}var(--state-success){% elif domain.score >= 70 %}var(--state-warning){% elif domain.score > 0 %}#D67C80{% else %}transparent{% endif %}; border-radius: 4px;"></div>
+        </div>
+        <span style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-top: 0.25rem;">
+          {{ domain.description }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Score Distribution -->
+  <div class="card">
+    <div class="card-title">
+      <span>Score Distribution (All Completed Exercises)</span>
+      <span class="badge badge-active">Standard Distribution</span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Distribution of individual evaluation scores achieved across all scenarios.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
+          <span style="color: var(--state-success); font-weight: 600;">90% &ndash; 100% (Exceptional)</span>
+          <span class="mono">{{ distribution.tier_90_100 }} exercises</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="width: {{ distribution.tier_90_100_pct }}%; height: 100%; background: var(--state-success);"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
+          <span style="color: var(--accent-secondary); font-weight: 600;">80% &ndash; 89% (Proficient)</span>
+          <span class="mono">{{ distribution.tier_80_89 }} exercises</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="width: {{ distribution.tier_80_89_pct }}%; height: 100%; background: var(--accent-secondary);"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
+          <span style="color: var(--state-warning); font-weight: 600;">70% &ndash; 79% (Developing)</span>
+          <span class="mono">{{ distribution.tier_70_79 }} exercises</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="width: {{ distribution.tier_70_79_pct }}%; height: 100%; background: var(--state-warning);"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
+          <span style="color: #D67C80; font-weight: 600;">&lt; 70% (Requires Remediation)</span>
+          <span class="mono">{{ distribution.tier_under_70 }} exercises</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="width: {{ distribution.tier_under_70_pct }}%; height: 100%; background: #D67C80;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-card-alt); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-secondary);">
+      <strong style="font-size: 0.82rem; color: var(--text-main); display: block; margin-bottom: 0.25rem;">
+        Key Readiness Finding:
+      </strong>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+        {{ analytics_note }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario Performance Matrix -->
+<div class="card">
+  <div class="card-title">
+    <span>Scenario Performance Matrix</span>
+    <span class="badge badge-active">Curriculum Evaluation</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Comparison of team success rates and triage speed across the cyber range simulation catalog.
+  </p>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario Title</th>
+          <th>Category</th>
+          <th>Difficulty</th>
+          <th>Total Runs</th>
+          <th>Pass Rate (&ge;75%)</th>
+          <th>Team Avg Score</th>
+          <th>Target Competency</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sm in scenario_matrix %}
+        <tr>
+          <td><strong>{{ sm.title }}</strong></td>
+          <td><span class="mono" style="font-size: 0.78rem; color: var(--accent-secondary);">{{ sm.category }}</span></td>
+          <td>
+            <span class="badge {% if sm.difficulty == 'Advanced' %}badge-red{% elif sm.difficulty == 'Intermediate' %}badge-amber{% else %}badge-green{% endif %}">
+              {{ sm.difficulty }}
+            </span>
+          </td>
+          <td class="mono" style="font-size: 0.85rem;">{{ sm.runs_count }}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; max-width: 60px; overflow: hidden;">
+                <div style="width: {{ sm.pass_rate }}%; height: 100%; background: {% if sm.pass_rate >= 80 %}var(--state-success){% elif sm.pass_rate >= 60 %}var(--state-warning){% else %}#D67C80{% endif %};"></div>
+              </div>
+              <span class="mono" style="font-size: 0.78rem;">{{ sm.pass_rate }}%</span>
+            </div>
+          </td>
+          <td class="mono" style="font-weight: 700; color: {% if sm.avg_score >= 80 %}var(--state-success){% elif sm.avg_score >= 70 %}var(--state-warning){% elif sm.avg_score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if sm.avg_score > 0 %}{{ sm.avg_score }}%{% else %}—{% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-cream);">{{ sm.primary_skill }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

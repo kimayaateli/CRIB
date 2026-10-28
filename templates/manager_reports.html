@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Training Reports &amp; Compliance | CRIB Supervisor Portal{% endblock %}
+
+{% block content %}
+<style>
+@media print {
+  header.navbar, .btn, .flash-container, .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .card {
+    border: 1px solid #cccccc !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+  table th, table td {
+    border: 1px solid #dddddd !important;
+    color: #000000 !important;
+  }
+  .stat-value, .page-title {
+    color: #000000 !important;
+  }
+}
+</style>
+
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      SOC Supervision &bull; Formal Training Verification &amp; Audit Trail
+    </div>
+    <h1 class="page-title">Executive Training Reports &amp; Compliance</h1>
+    <p class="page-desc">Comprehensive verification record of hands-on cyber range simulation hours and competency scores.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;" class="no-print">
+    <button onclick="window.print()" class="btn btn-secondary">🖨️ Print Dossier</button>
+    <a href="{{ url_for('export_reports_csv') }}" class="btn btn-primary">📥 Export CSV &rarr;</a>
+  </div>
+</div>
+
+<!-- Executive Metric Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Assigned Staff</span>
+    <span class="stat-value">{{ summary.total_assigned }}</span>
+    <span class="stat-desc">Supervised team members</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Verified Hands-On Hours</span>
+    <span class="stat-value mono" style="font-size: 1.85rem;">{{ summary.total_hours }}h</span>
+    <span class="stat-desc">Logged simulation time</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Team Average Assessment</span>
+    <span class="stat-value mono" style="font-size: 1.85rem; color: var(--text-main);">{{ summary.avg_team_score }}%</span>
+    <span class="stat-desc">Standard threshold: 75%</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Overall Completion Rate</span>
+    <span class="stat-value" style="color: var(--state-success);">
+      {{ summary.completion_rate }}%
+    </span>
+    <span class="stat-desc">Assigned work completed</span>
+  </div>
+</div>
+
+<!-- Full Team Compliance & Training Summary Table -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Team Training Compliance Roster</span>
+    <span class="badge badge-active">Official Verification Record</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Detailed record of completed hands-on hours, average score, assigned workload status, and supervisor evaluation status.
+  </p>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee Name</th>
+          <th>Department</th>
+          <th>Completed Scenarios</th>
+          <th>Verified Hours</th>
+          <th>Avg Assessment Score</th>
+          <th>Assigned Completion</th>
+          <th>Compliance Status</th>
+          <th>Last Activity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td>
+            <strong>{{ emp.full_name }}</strong>
+            <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">@{{ emp.username }} (ID #{{ emp.id }})</span>
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-cream);">{{ emp.department }}</td>
+          <td class="mono" style="font-size: 0.85rem; text-align: center;">{{ emp.completed_scenarios }}</td>
+          <td class="mono" style="font-size: 0.85rem;">{{ emp.training_hours }} hrs</td>
+          <td class="mono" style="font-weight: 700; color: {% if emp.avg_score >= 80 %}var(--state-success){% elif emp.avg_score >= 70 %}var(--state-warning){% elif emp.avg_score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if emp.avg_score > 0 %}{{ emp.avg_score }}%{% else %}—{% endif %}
+          </td>
+          <td class="mono" style="font-size: 0.85rem;">{{ emp.completion_pct }}%</td>
+          <td>
+            {% if emp.avg_score >= 75 and emp.completion_pct >= 80 %}
+              <span class="badge badge-green">COMPLIANT</span>
+            {% elif emp.completion_pct > 0 or emp.avg_score > 0 %}
+              <span class="badge badge-amber">IN PROGRESS</span>
+            {% else %}
+              <span class="badge badge-red">NON COMPLIANT</span>
+            {% endif %}
+          </td>
+          <td class="mono" style="font-size: 0.82rem; color: var(--text-dim);">
+            {{ emp.last_activity_date or 'No recent records' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Recent Completed Activities & AAR Submissions -->
+<div class="card">
+  <div class="card-title">
+    <span>Recent Completed Training Exercises &amp; Audit Logs</span>
+    <span class="badge badge-active">{{ recent_activities|length }} Records</span>
+  </div>
+
+  {% if recent_activities %}
+  <div class="table-container" style="margin-top: 1rem;">
+    <table>
+      <thead>
+        <tr>
+          <th>Date &amp; Time</th>
+          <th>Analyst</th>
+          <th>Scenario</th>
+          <th>Activity Type</th>
+          <th>Duration</th>
+          <th>Final Score</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for act in recent_activities %}
+        <tr>
+          <td class="mono" style="font-size: 0.82rem;">{{ act.activity_date }}</td>
+          <td><strong>{{ act.user_full_name }}</strong></td>
+          <td>{{ act.scenario_title }}</td>
+          <td class="mono" style="font-size: 0.78rem; color: var(--accent-secondary);">{{ act.activity_type }}</td>
+          <td class="mono" style="font-size: 0.85rem;">{{ (act.duration_seconds / 60)|round(1) }} min</td>
+          <td class="mono" style="font-weight: 700; color: {% if act.score and act.score >= 80 %}var(--state-success){% elif act.score and act.score >= 70 %}var(--state-warning){% elif act.score %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if act.score is not none %}{{ act.score }}%{% else %}—{% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{% if act.status == 'COMPLETED' %}green{% elif act.status == 'IN_PROGRESS' %}amber{% else %}active{% endif %}">
+              {{ act.status }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+    <p>No recent activity records to display.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}User Management | CRIB Administration{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      Platform Administration &bull; Security &amp; Access Governance
+    </div>
+    <h1 class="page-title">User &amp; Role Management</h1>
+    <p class="page-desc">Provision accounts, assign operational roles, configure supervisor hierarchies, and audit platform security.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('admin_audit') }}" class="btn btn-secondary">Platform Audit Logs &rarr;</a>
+  </div>
+</div>
+
+<!-- Quick Statistics -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Total Provisioned Users</span>
+    <span class="stat-value">{{ users|length }}</span>
+    <span class="stat-desc">System accounts in registry</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Active Accounts</span>
+    <span class="stat-value" style="color: var(--state-success);">
+      {{ active_count }}
+    </span>
+    <span class="stat-desc">Authorized for range access</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Employees / Analysts</span>
+    <span class="stat-value">{{ employee_count }}</span>
+    <span class="stat-desc">Hands-on trainees</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Managers &amp; Admins</span>
+    <span class="stat-value" style="color: var(--accent-secondary);">
+      {{ supervisor_count }}
+    </span>
+    <span class="stat-desc">Oversight &amp; system leaders</span>
+  </div>
+</div>
+
+<!-- Create New User Form -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Provision New User Account</span>
+    <span class="badge badge-active">Account Enrollment</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Create an authenticated account with cryptographically hashed credentials and designated access level.
+  </p>
+
+  <form action="{{ url_for('admin_user_create') }}" method="POST">
+    <div class="grid grid-cols-3" style="gap: 1rem; margin-bottom: 1rem;">
+      <div>
+        <label class="form-label" for="username">Username *</label>
+        <input type="text" name="username" id="username" class="form-control" required placeholder="e.g. jdoe">
+      </div>
+
+      <div>
+        <label class="form-label" for="full_name">Full Name *</label>
+        <input type="text" name="full_name" id="full_name" class="form-control" required placeholder="e.g. John Doe">
+      </div>
+
+      <div>
+        <label class="form-label" for="email">Corporate Email *</label>
+        <input type="email" name="email" id="email" class="form-control" required placeholder="e.g. jdoe@company.corp">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-4" style="gap: 1rem; margin-bottom: 1.25rem;">
+      <div>
+        <label class="form-label" for="password">Password * (Min 6 chars)</label>
+        <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="••••••••">
+      </div>
+
+      <div>
+        <label class="form-label" for="role">Role / Access Level *</label>
+        <select name="role" id="role" class="form-control" required>
+          <option value="EMPLOYEE" selected>EMPLOYEE (Trainee)</option>
+          <option value="MANAGER">MANAGER (Supervisor)</option>
+          <option value="ADMIN">ADMIN (System Administrator)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="department">Department</label>
+        <input type="text" name="department" id="department" class="form-control" value="Cyber Incident Response Team">
+      </div>
+
+      <div>
+        <label class="form-label" for="supervisor_id">Assigned Supervisor</label>
+        <select name="supervisor_id" id="supervisor_id" class="form-control">
+          <option value="">None (Unassigned / Leader)</option>
+          {% for m in managers %}
+            <option value="{{ m.id }}">{{ m.full_name }} ({{ m.role }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end;">
+      <button type="submit" class="btn btn-primary">+ Create &amp; Provision User &rarr;</button>
+    </div>
+  </form>
+</div>
+
+<!-- User Directory Table -->
+<div class="card">
+  <div class="card-title">
+    <span>Platform User Directory</span>
+    <span class="badge badge-active">{{ users|length }} Total Accounts</span>
+  </div>
+
+  <div class="table-container" style="margin-top: 1rem;">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Assigned Supervisor</th>
+          <th>Account Status</th>
+          <th>Last Login</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <strong>{{ u.full_name }}</strong>
+            <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">@{{ u.username }} (ID #{{ u.id }}) &bull; {{ u.email }}</span>
+          </td>
+          <td>
+            <span class="badge {% if u.role == 'ADMIN' %}badge-red{% elif u.role == 'MANAGER' %}badge-amber{% else %}badge-active{% endif %}">
+              {{ u.role }}
+            </span>
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-cream);">{{ u.department }}</td>
+          <td>
+            {% if u.supervisor_name %}
+              <span style="font-weight: 600; font-size: 0.85rem; color: var(--accent-secondary);">{{ u.supervisor_name }}</span>
+            {% else %}
+              <span style="color: var(--text-dim); font-size: 0.8rem;">None</span>
+            {% endif %}
+
+            <!-- Quick Reassign Supervisor Form -->
+            {% if u.role == 'EMPLOYEE' %}
+            <form action="{{ url_for('admin_user_assign_supervisor', user_id=u.id) }}" method="POST" style="margin-top: 0.35rem; display: flex; gap: 0.35rem; align-items: center;">
+              <select name="supervisor_id" class="form-control" style="padding: 0.2rem 0.4rem; font-size: 0.72rem; width: auto;">
+                <option value="">Unassign</option>
+                {% for m in managers %}
+                  <option value="{{ m.id }}" {% if u.supervisor_id == m.id %}selected{% endif %}>{{ m.full_name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;">Set</button>
+            </form>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge {% if u.is_active %}badge-green{% else %}badge-red{% endif %}">
+              {% if u.is_active %}Active{% else %}Suspended{% endif %}
+            </span>
+          </td>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">
+            {{ u.last_login or 'Never logged in' }}
+          </td>
+          <td>
+            <form action="{{ url_for('admin_user_toggle_status', user_id=u.id) }}" method="POST" style="display: inline;">
+              <button type="submit" class="btn {% if u.is_active %}btn-secondary{% else %}btn-primary{% endif %} btn-sm" style="font-size: 0.75rem;">
+                {% if u.is_active %}Suspend{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

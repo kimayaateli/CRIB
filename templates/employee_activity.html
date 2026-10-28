@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Activity History | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Training Activity History</h1>
+    <p class="page-desc">Complete audit log of completed cybersecurity scenario attempts, session durations, and defensive scoring.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('employee_dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">
+    <span>Completed Exercise Log</span>
+    <span class="badge badge-active">{{ activities|length }} Sessions Recorded</span>
+  </div>
+
+  {% if activities %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Scenario</th>
+          <th>Activity Type</th>
+          <th>Score</th>
+          <th>Session Time</th>
+          <th>Outcome</th>
+          <th>Feedback &amp; Observations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for act in activities %}
+        <tr>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">{{ act.activity_date }}</td>
+          <td>
+            <strong style="color: var(--text-main);">{{ act.scenario_id }}</strong>
+            {% if act.incident_id %}
+            <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">Incident #{{ act.incident_id }}</span>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-stage">{{ act.activity_type }}</span></td>
+          <td class="mono" style="font-weight: 700; color: {% if act.score >= 80 %}var(--state-success){% elif act.score >= 70 %}var(--state-warning){% else %}#D67C80{% endif %}; font-size: 0.95rem;">
+            {{ act.score }}/100
+          </td>
+          <td class="mono" style="font-size: 0.85rem;">{{ (act.duration_seconds / 60)|round|int }} mins</td>
+          <td><span class="badge badge-completed">{{ act.status }}</span></td>
+          <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 320px;">
+            {{ act.feedback or 'Standard scenario completion evaluation.' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2.5rem; text-align: center; color: var(--text-dim);">
+    <p>No activity records found.</p>
+    <a href="{{ url_for('scenarios_list') }}" class="btn btn-primary" style="margin-top: 1rem;">Launch First Exercise</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

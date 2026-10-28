@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}My Training Activities | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">My Training &amp; Scenario Assignments</h1>
+    <p class="page-desc">Assigned cybersecurity exercises, priorities, and available range simulations.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('employee_dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<!-- Active Assignments Section -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Supervisor Assignments</span>
+    <span class="badge badge-active">{{ assignments|length }} Total Assignments</span>
+  </div>
+
+  {% if assignments %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Supervisor</th>
+          <th>Due Date</th>
+          <th>Priority</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Feedback</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>
+            <strong style="color: var(--text-main);">{{ a.scenario_id }}</strong>
+            {% if a.instructions %}
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">{{ a.instructions }}</div>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.85rem;">{{ a.manager_name }}</td>
+          <td class="mono" style="font-size: 0.82rem; color: {% if a.status == 'OVERDUE' %}#D67C80{% else %}var(--text-main){% endif %};">
+            {{ a.due_date }}
+          </td>
+          <td><span class="badge badge-{{ a.priority.lower() }}">{{ a.priority }}</span></td>
+          <td><span class="badge badge-stage">{% if a.is_required %}Required{% else %}Optional{% endif %}</span></td>
+          <td><span class="badge badge-{{ a.status.lower().replace('_', '-') }}">{{ a.status }}</span></td>
+          <td class="mono" style="font-weight: 700;">
+            {% if a.score is not none %}{{ a.score }}/100{% else %}—{% endif %}
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 200px;">
+            {{ a.manager_feedback or 'Pending review' }}
+          </td>
+          <td>
+            {% if a.status in ('ASSIGNED', 'IN_PROGRESS', 'NEEDS_IMPROVEMENT') %}
+            <form action="{{ url_for('start_incident', scenario_id=a.scenario_id) }}" method="POST" style="margin: 0;">
+              <input type="hidden" name="assignment_id" value="{{ a.id }}">
+              <button type="submit" class="btn btn-primary btn-sm">Engage &rarr;</button>
+            </form>
+            {% else %}
+            <span style="font-size: 0.8rem; color: var(--text-dim);">Completed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+    <p>No training assignments currently on record.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Available Scenarios Catalog -->
+<div class="card">
+  <div class="card-title">
+    <span>Self-Paced Cyber Range Exercises</span>
+    <span class="badge badge-observed">4 Scenarios Available</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Practice defensive containment, triage, and mitigation techniques in an isolated local loopback cyber range.
+  </p>
+
+  <div class="grid grid-cols-2">
+    {% for sc in all_scenarios %}
+    <div style="padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <strong style="font-size: 1rem; color: var(--text-main);">{{ sc.title }}</strong>
+          <span class="badge badge-{{ sc.severity.lower() }}">{{ sc.severity }}</span>
+        </div>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          {{ sc.description }}
+        </p>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
+        <span class="mono" style="font-size: 0.75rem; color: var(--accent-secondary);">{{ sc.category }}</span>
+        <form action="{{ url_for('start_incident', scenario_id=sc.id) }}" method="POST" style="margin: 0;">
+          <button type="submit" class="btn btn-secondary btn-sm">Practice Scenario &rarr;</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

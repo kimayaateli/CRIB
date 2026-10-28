@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}My Progress &amp; Heatmap | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Training Progress &amp; Activity Heatmap</h1>
+    <p class="page-desc">Visual timeline of validated cybersecurity training hours, daily participation, and skill progression.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('employee_dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<!-- 12-Week Activity Heatmap -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Daily Incident Response Activity Heatmap</span>
+    <span class="badge badge-active">{{ heatmap.total_active_days }} Active Days in Past 12 Weeks</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+    Each square represents one calendar day. Hover over any block to inspect verified session duration, activity count, and assessment results.
+  </p>
+
+  <div class="heatmap-container">
+    <div class="heatmap-grid">
+      {% for d in heatmap.days %}
+      <div class="heatmap-cell heatmap-level-{{ d.level }}"
+           title="{{ d.date }} ({{ d.day_name }}): {{ d.count }} activities, {{ d.duration_minutes }}m verified time, avg score {{ d.avg_score }}%">
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="heatmap-legend">
+      <span>No Activity</span>
+      <div class="heatmap-cell heatmap-level-0" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-1" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-2" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-3" style="display: inline-block;"></div>
+      <span>High Activity (3+ Sessions)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Weekly Breakdown Table -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Weekly Performance Trend (8-Week History)</span>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Week</th>
+          <th>Calendar Range</th>
+          <th>Completed Scenarios</th>
+          <th>Verified Training Time</th>
+          <th>Average Assessment Score</th>
+          <th>Performance Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for w in trends %}
+        <tr>
+          <td class="mono" style="font-weight: 700; color: var(--text-main);">{{ w.week_label }}</td>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">{{ w.date_range }}</td>
+          <td class="mono" style="font-weight: 600;">{{ w.completed }}</td>
+          <td class="mono">{{ w.hours }} hours</td>
+          <td class="mono" style="font-weight: 700; color: {% if w.score >= 80 %}var(--state-success){% elif w.score >= 70 %}var(--state-warning){% elif w.score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if w.score > 0 %}{{ w.score }}%{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if w.completed >= 2 and w.score >= 80 %}
+              <span class="badge badge-green">Target Exceeded</span>
+            {% elif w.completed >= 1 and w.score >= 70 %}
+              <span class="badge badge-green">On Track</span>
+            {% elif w.completed > 0 %}
+              <span class="badge badge-amber">Attention Needed</span>
+            {% else %}
+              <span class="badge badge-gray">No Activity</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Skills Competencies Matrix -->
+<div class="card">
+  <div class="card-title">
+    <span>Skill Development Matrix</span>
+  </div>
+
+  <div class="grid grid-cols-2">
+    {% for s in skills %}
+    <div style="padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <strong style="color: var(--text-main); font-size: 0.95rem;">{{ s.skill }}</strong>
+        <span class="badge badge-{{ s.color }}">{{ s.proficiency }}</span>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.65rem;">
+        {{ s.description }}
+      </p>
+      <div style="display: flex; justify-content: space-between; font-size: 0.78rem; border-top: 1px solid var(--border-color); padding-top: 0.45rem;">
+        <span>Assessment Average: <strong class="mono" style="color: var(--text-main);">{{ s.score }}%</strong></span>
+        <span>Total Exercises: <strong class="mono">{{ s.attempts }}</strong></span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

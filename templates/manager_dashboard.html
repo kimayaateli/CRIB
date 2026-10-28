@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Oversight Dashboard | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      SOC Supervision &bull; Team Management Portal
+    </div>
+    <h1 class="page-title">{{ manager.full_name }} — Team Overview</h1>
+    <p class="page-desc">Monitoring training progress, verified hands-on hours, and assessment trends for your assigned team.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('employee_dashboard') }}" class="btn btn-secondary" style="border: 1px solid var(--accent-secondary); color: var(--accent-secondary);" title="Access your personal training records, heatmap, and scenarios">👤 My Personal Cockpit &rarr;</a>
+    <a href="{{ url_for('manager_assignments') }}" class="btn btn-secondary">Manage Assignments</a>
+    <a href="{{ url_for('manager_reports') }}" class="btn btn-primary">Team Reports &amp; CSV &rarr;</a>
+  </div>
+</div>
+
+<!-- Team Performance Summary Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Assigned Team Members</span>
+    <span class="stat-value">{{ summary.total_assigned }}</span>
+    <span class="stat-desc">Direct reporting analysts</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Active in Training</span>
+    <span class="stat-value stat-value-accent" style="color: var(--state-success);">{{ summary.active_employees }}</span>
+    <span class="stat-desc">Accounts active in training</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Meeting Target (Score &ge; 75%)</span>
+    <span class="stat-value" style="color: var(--state-success);">{{ summary.meeting_targets }}</span>
+    <span class="stat-desc">On track with performance goals</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Needing Additional Support</span>
+    <span class="stat-value" style="color: {% if summary.needs_support > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+      {{ summary.needs_support }}
+    </span>
+    <span class="stat-desc">Low score or overdue work</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Team Completed Exercises</span>
+    <span class="stat-value">{{ summary.completed_scenarios }}</span>
+    <span class="stat-desc">Total range simulations passed</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Total Verified Hours</span>
+    <span class="stat-value mono" style="font-size: 1.85rem;">{{ summary.total_hours }}h</span>
+    <span class="stat-desc">Cumulative active training time</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Team Average Assessment</span>
+    <span class="stat-value mono" style="font-size: 1.85rem; color: var(--text-main);">{{ summary.avg_team_score }}%</span>
+    <span class="stat-desc">Weighted evaluation mean</span>
+  </div>
+
+  <div class="card stat-card" style="display: flex; justify-content: center; align-items: center; text-align: center;">
+    <a href="{{ url_for('manager_assignments') }}" class="btn btn-primary" style="width: 100%;">
+      + Assign Scenario
+    </a>
+  </div>
+</div>
+
+<!-- Employee Performance Table (Searchable & Filterable) -->
+<div class="card" id="employees" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Supervised Employee Performance</span>
+    <span class="badge badge-active">{{ employees|length }} Team Members</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Comprehensive overview of scenario completion, verified hands-on hours, weekly trend indicators, and active assignments.
+  </p>
+
+  {% if employees %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Assigned Completion</th>
+          <th>Verified Time</th>
+          <th>Avg Score</th>
+          <th>Weekly Trend</th>
+          <th>Pending Work</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td>
+            <a href="{{ url_for('manager_employee_detail', employee_id=emp.id) }}" style="font-weight: 600; color: var(--text-main);">
+              {{ emp.full_name }}
+            </a>
+            <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">@{{ emp.username }} (ID #{{ emp.id }})</span>
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-cream);">{{ emp.department }}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; max-width: 70px; overflow: hidden;">
+                <div style="width: {{ emp.completion_pct }}%; height: 100%; background: var(--accent-secondary);"></div>
+              </div>
+              <span class="mono" style="font-size: 0.78rem;">{{ emp.completion_pct }}%</span>
+            </div>
+          </td>
+          <td class="mono" style="font-size: 0.85rem;">{{ emp.training_hours }} hrs</td>
+          <td class="mono" style="font-weight: 700; color: {% if emp.avg_score >= 80 %}var(--state-success){% elif emp.avg_score >= 70 %}var(--state-warning){% elif emp.avg_score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if emp.avg_score > 0 %}{{ emp.avg_score }}%{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if emp.weekly_trend == 'Improving' %}
+              <span style="color: var(--state-success); font-weight: 600; font-size: 0.8rem;">&uarr; Improving</span>
+            {% elif emp.weekly_trend == 'Declining' %}
+              <span style="color: #D67C80; font-weight: 600; font-size: 0.8rem;">&darr; Declining</span>
+            {% elif emp.weekly_trend == 'Stable' %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">&rarr; Stable</span>
+            {% else %}
+              <span style="color: var(--text-dim); font-size: 0.8rem;">Insufficient Data</span>
+            {% endif %}
+          </td>
+          <td class="mono" style="text-align: center;">
+            {% if emp.pending_assignments > 0 %}
+              <span class="badge badge-amber">{{ emp.pending_assignments }} Pending</span>
+            {% else %}
+              <span class="badge badge-green">0</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{{ emp.status_color }}">{{ emp.status }}</span>
+          </td>
+          <td>
+            <a href="{{ url_for('manager_employee_detail', employee_id=emp.id) }}" class="btn btn-secondary btn-sm">
+              View Report &rarr;
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2.5rem; text-align: center; color: var(--text-dim);">
+    <p>No employees currently assigned to your supervision.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

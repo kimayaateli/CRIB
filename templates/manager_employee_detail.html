@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.full_name }} — Employee Training Report | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      <a href="{{ url_for('manager_dashboard') }}" style="color: var(--accent-secondary); text-decoration: none;">&larr; Back to Team Overview</a> &bull; Individual Performance Dossier
+    </div>
+    <h1 class="page-title">{{ employee.full_name }}</h1>
+    <p class="page-desc">
+      {{ employee.department }} &bull; Username: <span class="mono">@{{ employee.username }}</span> &bull; Email: {{ employee.email }} &bull; Status:
+      <span class="badge {% if employee.is_active %}badge-green{% else %}badge-red{% endif %}">
+        {% if employee.is_active %}Active Account{% else %}Inactive{% endif %}
+      </span>
+    </p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="#assign-section" class="btn btn-primary">+ Assign Scenario</a>
+    <a href="{{ url_for('manager_reports') }}" class="btn btn-secondary">Team Reports</a>
+  </div>
+</div>
+
+<!-- 5 Key Performance Cards -->
+<div class="grid grid-cols-4" style="margin-bottom: 2rem;">
+  <div class="card stat-card">
+    <span class="stat-label">Completed Scenarios</span>
+    <span class="stat-value">{{ summary.completed_scenarios }}</span>
+    <span class="stat-desc">Range exercises completed</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Hands-On Training Time</span>
+    <span class="stat-value mono" style="font-size: 1.85rem;">{{ summary.total_training_hours }}h</span>
+    <span class="stat-desc">Cumulative range session time</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Average Assessment Score</span>
+    <span class="stat-value mono" style="font-size: 1.85rem; color: {% if summary.avg_score >= 80 %}var(--state-success){% elif summary.avg_score >= 70 %}var(--state-warning){% elif summary.avg_score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+      {% if summary.avg_score > 0 %}{{ summary.avg_score }}%{% else %}—{% endif %}
+    </span>
+    <span class="stat-desc">Target standard: 75%+</span>
+  </div>
+
+  <div class="card stat-card">
+    <span class="stat-label">Pending Assigned Work</span>
+    <span class="stat-value" style="color: {% if summary.pending_assignments > 0 %}var(--state-warning){% else %}var(--state-success){% endif %};">
+      {{ summary.pending_assignments }}
+    </span>
+    <span class="stat-desc">Assigned by management</span>
+  </div>
+</div>
+
+<!-- 12-Week Activity Heatmap -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>12-Week Activity Frequency Grid</span>
+    <span class="badge badge-active">{{ summary.activity_streak }} Day Streak</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Visual record of hands-on simulation participation over the past 12 weeks.
+  </p>
+
+  <div class="heatmap-container" style="overflow-x: auto; padding-bottom: 0.5rem;">
+    <div class="heatmap-grid">
+      {% for day in heatmap.days %}
+        <div class="heatmap-cell heatmap-level-{{ day.level }}" title="{{ day.date }} ({{ day.day_name }}): {{ day.count }} activities ({{ day.duration_minutes }}m)"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-dim);">
+    <span>90-Day Continuous Rolling Window</span>
+    <div style="display: flex; align-items: center; gap: 0.4rem;">
+      <span>Less</span>
+      <div class="heatmap-cell heatmap-level-0" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-1" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-2" style="display: inline-block;"></div>
+      <div class="heatmap-cell heatmap-level-3" style="display: inline-block;"></div>
+      <span>More</span>
+    </div>
+  </div>
+</div>
+
+<!-- Skills Radar / Competency Breakdown & Weekly Trends -->
+<div class="grid grid-cols-2" style="margin-bottom: 2rem;">
+  <!-- Skills Breakdown -->
+  <div class="card">
+    <div class="card-title">
+      <span>Competency &amp; Skill Breakdown</span>
+      <span class="mono" style="font-size: 0.75rem; color: var(--accent-secondary);">VERIFIED PROFICIENCY</span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Incident response performance categorized across cybersecurity operational competencies.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+      {% for skill in skills_breakdown %}
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+          <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-main);">{{ skill.name }}</span>
+          <span class="mono" style="font-size: 0.82rem; font-weight: 700; color: {% if skill.score >= 80 %}var(--state-success){% elif skill.score >= 70 %}var(--state-warning){% elif skill.score > 0 %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if skill.score > 0 %}{{ skill.score }}%{% else %}Unassessed{% endif %}
+          </span>
+        </div>
+        <div style="width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+          <div style="width: {{ skill.score }}%; height: 100%; background: {% if skill.score >= 80 %}var(--state-success){% elif skill.score >= 70 %}var(--state-warning){% elif skill.score > 0 %}#D67C80{% else %}transparent{% endif %}; border-radius: 4px;"></div>
+        </div>
+        <span style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-top: 0.25rem;">
+          {{ skill.description }} &bull; {{ skill.exercises_evaluated }} evaluated instances
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Weekly Performance Trend -->
+  <div class="card">
+    <div class="card-title">
+      <span>8-Week Performance Trend</span>
+      <span class="badge {% if summary.weekly_trend == 'Improving' %}badge-green{% elif summary.weekly_trend == 'Declining' %}badge-red{% else %}badge-active{% endif %}">
+        Trend: {{ summary.weekly_trend }}
+      </span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Weekly average assessment scores over the past 8 weeks.
+    </p>
+
+    <div class="trend-bar-chart" style="display: flex; align-items: flex-end; justify-content: space-between; height: 170px; padding: 1rem 0; border-bottom: 1px solid var(--border-color);">
+      {% for week in progress_trends %}
+      <div style="display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end;">
+        <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.35rem;">
+          {% if week.avg_score > 0 %}{{ week.avg_score }}%{% else %}—{% endif %}
+        </span>
+        <div style="width: 24px; height: {{ week.avg_score * 1.3 }}px; min-height: 4px; background: {% if week.avg_score >= 80 %}var(--state-success){% elif week.avg_score >= 70 %}var(--state-warning){% elif week.avg_score > 0 %}#D67C80{% else %}var(--bg-secondary){% endif %}; border-radius: 3px 3px 0 0;"></div>
+        <span class="mono" style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.5rem;">{{ week.week_label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+      <strong>Manager Observation:</strong>
+      {% if summary.weekly_trend == 'Improving' %}
+        Analyst is showing consistent performance gains in incident response accuracy and speed.
+      {% elif summary.weekly_trend == 'Declining' %}
+        Performance has dropped below recent benchmarks. Recommend targeted scenario assignment and 1-on-1 feedback.
+      {% else %}
+        Performance metrics are stable within expected operational baseline.
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Assign New Scenario to this Employee -->
+<div class="card" id="assign-section" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Assign Targeted Scenario</span>
+    <span class="badge badge-active">Direct Assignment</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Assign a specific incident response simulation with customized instructions, priority level, and completion deadline.
+  </p>
+
+  <form action="{{ url_for('manager_assign_post') }}" method="POST">
+    <input type="hidden" name="employee_id" value="{{ employee.id }}">
+    
+    <div class="grid grid-cols-3" style="gap: 1rem; margin-bottom: 1rem;">
+      <div>
+        <label class="form-label" for="scenario_id">Cyber Range Scenario *</label>
+        <select name="scenario_id" id="scenario_id" class="form-control" required>
+          {% for sc in scenarios %}
+            <option value="{{ sc.id }}">{{ sc.title }} ({{ sc.category }} &bull; {{ sc.difficulty or sc.severity }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="due_date">Due Date *</label>
+        <input type="date" name="due_date" id="due_date" class="form-control" required value="{{ default_due_date }}">
+      </div>
+
+      <div>
+        <label class="form-label" for="priority">Priority Level</label>
+        <select name="priority" id="priority" class="form-control">
+          <option value="LOW">Low</option>
+          <option value="MEDIUM" selected>Medium</option>
+          <option value="HIGH">High (Urgent)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 1.25rem;">
+      <label class="form-label" for="instructions">Instructions &amp; Focus Areas for Analyst</label>
+      <textarea name="instructions" id="instructions" class="form-control" rows="3" placeholder="Provide guidance, e.g. 'Pay special attention to correlating loopback telemetry before taking containment actions.'"></textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end;">
+      <button type="submit" class="btn btn-primary">Dispatch Training Assignment &rarr;</button>
+    </div>
+  </form>
+</div>
+
+<!-- Active & Completed Assignments for this Employee -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Assignment History &amp; Feedback</span>
+    <span class="badge badge-active">{{ assignments|length }} Records</span>
+  </div>
+
+  {% if assignments %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Priority</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Assigned Instructions</th>
+          <th>Manager Feedback</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>
+            <strong>{{ a.scenario_title }}</strong>
+            <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">ID #{{ a.id }}</span>
+          </td>
+          <td>
+            <span class="badge {% if a.priority == 'HIGH' %}badge-red{% elif a.priority == 'MEDIUM' %}badge-amber{% else %}badge-active{% endif %}">
+              {{ a.priority }}
+            </span>
+          </td>
+          <td class="mono" style="font-size: 0.82rem;">{{ a.due_date }}</td>
+          <td>
+            <span class="badge badge-{{ a.status_color }}">{{ a.status }}</span>
+          </td>
+          <td class="mono" style="font-weight: 700; color: {% if a.score and a.score >= 80 %}var(--state-success){% elif a.score and a.score >= 70 %}var(--state-warning){% elif a.score %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if a.score is not none %}{{ a.score }}%{% else %}—{% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-cream); max-width: 200px;">
+            {{ a.instructions or 'Standard curriculum assignment' }}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 200px;">
+            {% if a.manager_feedback %}
+              <em>"{{ a.manager_feedback }}"</em>
+            {% else %}
+              <span style="color: var(--text-dim);">No review submitted yet</span>
+            {% endif %}
+          </td>
+          <td>
+            <!-- Review / Feedback Button -->
+            <button onclick="document.getElementById('feedback-modal-{{ a.id }}').style.display='block'" class="btn btn-secondary btn-sm">
+              Review
+            </button>
+
+            <!-- Inline Review Modal -->
+            <div id="feedback-modal-{{ a.id }}" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; backdrop-filter: blur(4px);">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); max-width: 520px; margin: 10% auto; padding: 1.5rem;">
+                <h3 style="margin-bottom: 0.75rem; color: var(--text-main);">Review Assignment #{{ a.id }}</h3>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+                  Scenario: <strong>{{ a.scenario_title }}</strong> &bull; Analyst: {{ employee.full_name }}
+                </p>
+
+                <form action="{{ url_for('manager_review_assignment', assignment_id=a.id) }}" method="POST">
+                  <div style="margin-bottom: 1rem;">
+                    <label class="form-label" for="status-{{ a.id }}">Update Status</label>
+                    <select name="status" id="status-{{ a.id }}" class="form-control">
+                      <option value="ASSIGNED" {% if a.status == 'ASSIGNED' %}selected{% endif %}>ASSIGNED</option>
+                      <option value="IN_PROGRESS" {% if a.status == 'IN_PROGRESS' %}selected{% endif %}>IN PROGRESS</option>
+                      <option value="COMPLETED" {% if a.status == 'COMPLETED' %}selected{% endif %}>COMPLETED</option>
+                      <option value="OVERDUE" {% if a.status == 'OVERDUE' %}selected{% endif %}>OVERDUE</option>
+                    </select>
+                  </div>
+
+                  <div style="margin-bottom: 1rem;">
+                    <label class="form-label" for="feedback-{{ a.id }}">Supervisor Feedback &amp; Recommendations</label>
+                    <textarea name="feedback" id="feedback-{{ a.id }}" class="form-control" rows="3" placeholder="Add specific guidance or constructive notes for the employee...">{{ a.manager_feedback or '' }}</textarea>
+                  </div>
+
+                  <div style="margin-bottom: 1.25rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-cream); cursor: pointer;">
+                      <input type="checkbox" name="needs_reassessment" value="1" {% if a.needs_reassessment %}checked{% endif %}>
+                      Flag as Needing Re-assessment / Repeat Exercise
+                    </label>
+                  </div>
+
+                  <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" onclick="document.getElementById('feedback-modal-{{ a.id }}').style.display='none'" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Feedback</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+    <p>No assignments issued for this employee yet.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Detailed Activity History Table -->
+<div class="card">
+  <div class="card-title">
+    <span>Simulation Log &amp; Time Verification</span>
+    <span class="badge badge-active">{{ activities|length }} Sessions</span>
+  </div>
+
+  {% if activities %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date &amp; Time</th>
+          <th>Activity Type</th>
+          <th>Scenario / Incident</th>
+          <th>Duration</th>
+          <th>Evaluation Score</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for act in activities %}
+        <tr>
+          <td class="mono" style="font-size: 0.82rem;">{{ act.activity_date }}</td>
+          <td>
+            <span class="mono" style="font-size: 0.78rem; color: var(--accent-secondary);">{{ act.activity_type }}</span>
+          </td>
+          <td>
+            <strong>{{ act.scenario_title or 'Simulation Exercise' }}</strong>
+            {% if act.incident_id %}
+              <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">Incident #{{ act.incident_id }}</span>
+            {% endif %}
+          </td>
+          <td class="mono" style="font-size: 0.85rem;">{{ (act.duration_seconds / 60)|round(1) }} min</td>
+          <td class="mono" style="font-weight: 700; color: {% if act.score and act.score >= 80 %}var(--state-success){% elif act.score and act.score >= 70 %}var(--state-warning){% elif act.score %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if act.score is not none %}{{ act.score }}%{% else %}—{% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{% if act.status == 'COMPLETED' %}green{% elif act.status == 'IN_PROGRESS' %}amber{% else %}active{% endif %}">
+              {{ act.status }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2rem; text-align: center; color: var(--text-dim);">
+    <p>No recent activity logs recorded for this employee.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | CRIB Cyber Range{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 3rem auto;">
+  <div class="card" style="padding: 2.25rem;">
+    <div style="text-align: center; margin-bottom: 1.75rem;">
+      <div class="brand-icon" style="margin: 0 auto 0.75rem auto; width: 44px; height: 44px; font-size: 1.1rem;">CR</div>
+      <h1 class="page-title" style="font-size: 1.45rem;">Sign In to CRIB</h1>
+      <p class="page-desc" style="font-size: 0.85rem;">Internal Cybersecurity Training &amp; Performance Platform</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('login_view') }}">
+      <input type="hidden" name="next" value="{{ next_url or '' }}">
+
+      <div class="form-group">
+        <label class="form-label" for="username">Username or Employee ID</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. employee1, supervisor1, admin" required autofocus>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">
+        Sign In &rarr;
+      </button>
+    </form>
+
+    <div style="margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); font-size: 0.8rem; color: var(--text-dim);">
+      <div style="font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; color: var(--accent-secondary);">Default Training Accounts:</div>
+      <div style="display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.75rem;">
+        <div><strong style="color: var(--text-main);">Employee:</strong> employee1 / EmployeePass123!</div>
+        <div><strong style="color: var(--text-main);">Manager:</strong> supervisor1 / ManagerPass123!</div>
+        <div><strong style="color: var(--text-main);">Administrator:</strong> admin / AdminPass123!</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

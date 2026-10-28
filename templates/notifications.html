@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Notifications &amp; Alerts</h1>
+    <p class="page-desc">In-application alerts for training assignments, supervisor feedback, and deadlines.</p>
+  </div>
+  <div>
+    <form action="{{ url_for('mark_all_notifications_read_action') }}" method="POST" style="margin: 0;">
+      <button type="submit" class="btn btn-secondary">Mark All as Read</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  {% if notifications %}
+  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+    {% for n in notifications %}
+    <div style="padding: 1rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <span style="font-size: 1.25rem;">
+          {% if n.notification_type == 'ASSIGNMENT' %}📋{% elif n.notification_type == 'FEEDBACK' %}💬{% elif n.notification_type == 'DEADLINE' %}⏰{% else %}ℹ️{% endif %}
+        </span>
+        <div>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.2rem;">
+            <strong style="color: var(--text-main); font-size: 0.95rem;">{{ n.title }}</strong>
+            <span class="badge badge-stage">{{ n.notification_type }}</span>
+            {% if not n.is_read %}
+            <span class="badge badge-critical" style="font-size: 0.65rem;">NEW</span>
+            {% endif %}
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">{{ n.message }}</p>
+          <span class="mono" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.35rem; display: block;">{{ n.created_at[:19].replace('T', ' ') }}</span>
+        </div>
+      </div>
+      <div>
+        {% if not n.is_read %}
+        <form action="{{ url_for('mark_notification_read_action', notification_id=n.id) }}" method="POST" style="margin: 0;">
+          <button type="submit" class="btn btn-secondary btn-sm">Dismiss</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="padding: 3rem; text-align: center; color: var(--text-dim);">
+    <p>No notifications on record.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

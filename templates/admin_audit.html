@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Platform Audit Logs | CRIB Administration{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      Platform Administration &bull; Security &amp; Compliance Audit Trail
+    </div>
+    <h1 class="page-title">Platform Audit Logs</h1>
+    <p class="page-desc">Immutable chronological record of user authentication, administrative changes, and incident response operations.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">&larr; User Management</a>
+  </div>
+</div>
+
+<!-- Audit Log Table -->
+<div class="card">
+  <div class="card-title">
+    <span>Security Audit Trail</span>
+    <span class="badge badge-active">{{ audit_events|length }} Recent Events</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Every authorization event, password verification, scenario assignment, and credential modification is cryptographically associated with an active user session.
+  </p>
+
+  {% if audit_events %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Initiating User</th>
+          <th>Action Type</th>
+          <th>Details</th>
+          <th>Origin IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for evt in audit_events %}
+        <tr>
+          <td class="mono" style="font-size: 0.82rem; white-space: nowrap;">{{ evt.created_at }}</td>
+          <td>
+            {% if evt.user_full_name %}
+              <strong>{{ evt.user_full_name }}</strong>
+              <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">@{{ evt.username }} (ID #{{ evt.user_id }})</span>
+            {% else %}
+              <span class="mono" style="font-size: 0.8rem; color: var(--text-dim);">System / Guest</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="mono" style="font-size: 0.78rem; font-weight: 700; color: {% if 'FAIL' in evt.action or 'SUSPEND' in evt.action %}#D67C80{% elif 'LOGIN' in evt.action %}var(--state-success){% elif 'CREATE' in evt.action or 'ASSIGN' in evt.action %}var(--accent-secondary){% else %}var(--text-main){% endif %};">
+              {{ evt.action }}
+            </span>
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-cream); max-width: 420px; word-break: break-word;">
+            {{ evt.details }}
+          </td>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">
+            {{ evt.ip_address or '127.0.0.1' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2.5rem; text-align: center; color: var(--text-dim);">
+    <p>No audit events recorded yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Training Assignments | CRIB Supervisor Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="card-category" style="margin-bottom: 0.25rem;">
+      SOC Supervision &bull; Workload &amp; Curriculum Control
+    </div>
+    <h1 class="page-title">Training Assignments &amp; Workflow</h1>
+    <p class="page-desc">Dispatch cybersecurity scenarios to analysts, set completion deadlines, and review post-exercise performance.</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary">&larr; Team Overview</a>
+    <a href="{{ url_for('manager_reports') }}" class="btn btn-secondary">Team Reports</a>
+  </div>
+</div>
+
+<!-- Quick Assignment Creation Form -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">
+    <span>Dispatch New Scenario Assignment</span>
+    <span class="badge badge-active">Targeted Training</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+    Select a supervised employee, assign a simulation module, and specify training objectives.
+  </p>
+
+  <form action="{{ url_for('manager_assign_post') }}" method="POST">
+    <div class="grid grid-cols-4" style="gap: 1rem; margin-bottom: 1rem;">
+      <div>
+        <label class="form-label" for="employee_id">Target Employee *</label>
+        <select name="employee_id" id="employee_id" class="form-control" required>
+          {% for emp in team_members %}
+            <option value="{{ emp.id }}">{{ emp.full_name }} ({{ emp.department }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="scenario_id">Cyber Range Scenario *</label>
+        <select name="scenario_id" id="scenario_id" class="form-control" required>
+          {% for sc in scenarios %}
+            <option value="{{ sc.id }}">{{ sc.title }} [{{ sc.difficulty or sc.severity }}]</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="due_date">Due Date *</label>
+        <input type="date" name="due_date" id="due_date" class="form-control" required value="{{ default_due_date }}">
+      </div>
+
+      <div>
+        <label class="form-label" for="priority">Priority Level</label>
+        <select name="priority" id="priority" class="form-control">
+          <option value="LOW">Low</option>
+          <option value="MEDIUM" selected>Medium</option>
+          <option value="HIGH">High (Urgent)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 1.25rem;">
+      <label class="form-label" for="instructions">Instructions &amp; Operational Objectives</label>
+      <input type="text" name="instructions" id="instructions" class="form-control" placeholder="e.g. 'Execute detection analysis on ARP cache poisoning and achieve at least 80% containment accuracy.'">
+    </div>
+
+    <div style="display: flex; justify-content: flex-end;">
+      <button type="submit" class="btn btn-primary">+ Dispatch Assignment &rarr;</button>
+    </div>
+  </form>
+</div>
+
+<!-- Assignments Table -->
+<div class="card">
+  <div class="card-title">
+    <span>Team Assignment Roster</span>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="{{ url_for('manager_assignments') }}" class="btn btn-secondary btn-sm {% if not current_status %}active{% endif %}">All</a>
+      <a href="{{ url_for('manager_assignments', status='ASSIGNED') }}" class="btn btn-secondary btn-sm {% if current_status == 'ASSIGNED' %}active{% endif %}">Assigned</a>
+      <a href="{{ url_for('manager_assignments', status='IN_PROGRESS') }}" class="btn btn-secondary btn-sm {% if current_status == 'IN_PROGRESS' %}active{% endif %}">In Progress</a>
+      <a href="{{ url_for('manager_assignments', status='COMPLETED') }}" class="btn btn-secondary btn-sm {% if current_status == 'COMPLETED' %}active{% endif %}">Completed</a>
+      <a href="{{ url_for('manager_assignments', status='OVERDUE') }}" class="btn btn-secondary btn-sm {% if current_status == 'OVERDUE' %}active{% endif %}">Overdue</a>
+    </div>
+  </div>
+
+  {% if assignments %}
+  <div class="table-container" style="margin-top: 1rem;">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Scenario</th>
+          <th>Priority</th>
+          <th>Assigned Date</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Score</th>
+          <th>Supervisor Feedback</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>
+            <a href="{{ url_for('manager_employee_detail', employee_id=a.employee_id) }}" style="font-weight: 600; color: var(--text-main);">
+              {{ a.employee_name }}
+            </a>
+            <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">ID #{{ a.employee_id }}</span>
+          </td>
+          <td>
+            <strong>{{ a.scenario_title }}</strong>
+            <span class="mono" style="font-size: 0.72rem; color: var(--text-dim); display: block;">Assignment #{{ a.id }}</span>
+          </td>
+          <td>
+            <span class="badge {% if a.priority == 'HIGH' %}badge-red{% elif a.priority == 'MEDIUM' %}badge-amber{% else %}badge-active{% endif %}">
+              {{ a.priority }}
+            </span>
+          </td>
+          <td class="mono" style="font-size: 0.82rem;">{{ a.assigned_at[:10] }}</td>
+          <td class="mono" style="font-size: 0.82rem;">{{ a.due_date }}</td>
+          <td>
+            <span class="badge badge-{{ a.status_color }}">{{ a.status }}</span>
+          </td>
+          <td class="mono" style="font-weight: 700; color: {% if a.score and a.score >= 80 %}var(--state-success){% elif a.score and a.score >= 70 %}var(--state-warning){% elif a.score %}#D67C80{% else %}var(--text-dim){% endif %};">
+            {% if a.score is not none %}{{ a.score }}%{% else %}—{% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 200px;">
+            {% if a.manager_feedback %}
+              <em>"{{ a.manager_feedback }}"</em>
+            {% else %}
+              <span style="color: var(--text-dim);">No review submitted</span>
+            {% endif %}
+          </td>
+          <td>
+            <button onclick="document.getElementById('feedback-modal-{{ a.id }}').style.display='block'" class="btn btn-secondary btn-sm">
+              Review
+            </button>
+
+            <!-- Review Modal -->
+            <div id="feedback-modal-{{ a.id }}" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; backdrop-filter: blur(4px);">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); max-width: 520px; margin: 10% auto; padding: 1.5rem;">
+                <h3 style="margin-bottom: 0.75rem; color: var(--text-main);">Review Assignment #{{ a.id }}</h3>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+                  Analyst: <strong>{{ a.employee_name }}</strong> &bull; Scenario: {{ a.scenario_title }}
+                </p>
+
+                <form action="{{ url_for('manager_review_assignment', assignment_id=a.id) }}" method="POST">
+                  <div style="margin-bottom: 1rem;">
+                    <label class="form-label" for="status-{{ a.id }}">Update Status</label>
+                    <select name="status" id="status-{{ a.id }}" class="form-control">
+                      <option value="ASSIGNED" {% if a.status == 'ASSIGNED' %}selected{% endif %}>ASSIGNED</option>
+                      <option value="IN_PROGRESS" {% if a.status == 'IN_PROGRESS' %}selected{% endif %}>IN PROGRESS</option>
+                      <option value="COMPLETED" {% if a.status == 'COMPLETED' %}selected{% endif %}>COMPLETED</option>
+                      <option value="OVERDUE" {% if a.status == 'OVERDUE' %}selected{% endif %}>OVERDUE</option>
+                    </select>
+                  </div>
+
+                  <div style="margin-bottom: 1rem;">
+                    <label class="form-label" for="feedback-{{ a.id }}">Supervisor Feedback &amp; Recommendations</label>
+                    <textarea name="feedback" id="feedback-{{ a.id }}" class="form-control" rows="3" placeholder="Provide constructive feedback or instructions...">{{ a.manager_feedback or '' }}</textarea>
+                  </div>
+
+                  <div style="margin-bottom: 1.25rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-cream); cursor: pointer;">
+                      <input type="checkbox" name="needs_reassessment" value="1" {% if a.needs_reassessment %}checked{% endif %}>
+                      Flag as Needing Re-assessment
+                    </label>
+                  </div>
+
+                  <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" onclick="document.getElementById('feedback-modal-{{ a.id }}').style.display='none'" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Feedback</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 2.5rem; text-align: center; color: var(--text-dim);">
+    <p>No assignments found matching current filter.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

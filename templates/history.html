@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Incident History | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Incident Training History</h1>
+    <p class="page-desc">Audit trail of all previous and in-progress incident response exercises.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('scenarios_list') }}" class="btn btn-primary">Start New Exercise</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if incidents %}
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Scenario</th>
+          <th>Title</th>
+          <th>Started At (UTC)</th>
+          <th>Completed At (UTC)</th>
+          <th>Stage</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inc in incidents %}
+        <tr>
+          <td class="mono">#{{ inc.id }}</td>
+          <td class="mono" style="color: var(--accent-secondary);">{{ inc.scenario_id }}</td>
+          <td style="font-weight: 600;">{{ inc.title }}</td>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">{{ inc.created_at[:19].replace('T', ' ') if inc.created_at else '—' }}</td>
+          <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);">{{ inc.completed_at[:19].replace('T', ' ') if inc.completed_at else 'In Progress' }}</td>
+          <td><span class="badge badge-stage">{{ inc.stage }}</span></td>
+          <td class="mono" style="font-weight: 700; font-size: 0.95rem; color: {% if inc.score >= 80 %}var(--state-success){% elif inc.score >= 50 %}var(--state-warning){% else %}var(--state-critical){% endif %};">
+            {{ inc.score }}/100
+          </td>
+          <td>
+            <span class="badge badge-{{ inc.status.lower() }}">{{ inc.status }}</span>
+          </td>
+          <td>
+            {% if inc.status in ('COMPLETED', 'RESOLVED') %}
+              <a href="{{ url_for('results_view', incident_id=inc.id) }}" class="btn btn-secondary btn-sm">View Report</a>
+            {% else %}
+              <a href="{{ url_for('incident_view', incident_id=inc.id) }}" class="btn btn-primary btn-sm">Resume &rarr;</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 3rem; text-align: center; color: var(--text-dim);">
+    <p style="font-size: 1.05rem; color: var(--text-muted); margin-bottom: 0.5rem;">No exercises found in history.</p>
+    <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">Launch a scenario from the catalog to record your first incident response session.</p>
+    <a href="{{ url_for('scenarios_list') }}" class="btn btn-primary">Go to Scenarios</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

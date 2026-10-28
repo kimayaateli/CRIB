@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Scenarios Catalog | CRIB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Incident Response Scenarios</h1>
+    <p class="page-desc">Select a structured cybersecurity scenario to practice triage, investigation, containment, and recovery.</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-2">
+  {% for sc in scenarios %}
+  <div class="card" style="display: flex; flex-direction: column;">
+    <div class="card-title">
+      <div>
+        <span style="font-size: 1.15rem; font-weight: 700;">{{ sc.title }}</span>
+        <div class="card-category">{{ sc.category }}</div>
+      </div>
+      <span class="badge badge-{{ sc.severity.lower() }}">{{ sc.severity }}</span>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 1rem 0; flex: 1;">
+      {{ sc.summary }}
+    </p>
+
+    <div style="margin-bottom: 1.25rem;">
+      <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.5px;">Learning Objectives:</span>
+      <ul style="margin: 0.5rem 0 0 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+        {% for obj in sc.learning_objectives %}
+        <li style="margin-bottom: 0.25rem;">{{ obj }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.85rem; margin-top: auto;">
+      <span class="badge badge-simulated">{{ sc.evidence_origin }}</span>
+      <form action="{{ url_for('start_incident', scenario_id=sc.id) }}" method="POST" style="margin: 0;">
+        <button type="submit" class="btn btn-primary btn-sm">Start Scenario &rarr;</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
